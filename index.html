@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Skolēnu pusdienu uzskaite ar PIN</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+    #pinInput {
+      font-size: 18px;
+      padding: 8px;
+      width: 120px;
+      text-align: center;
+    }
+    .btn {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h2>🍽️ Skolēnu pusdienu uzskaite ar PIN</h2>
+
+  <p>Ievadi savu 5-ciparu PIN:</p>
+  <input id="pinInput" maxlength="5" placeholder="PIN" oninput="enableChoice()"/>
+
+  <div>
+    <button id="yesBtn" class="btn" onclick="choose(true)" disabled>✅ Ēdu</button>
+    <button id="noBtn"  class="btn" onclick="choose(false)" disabled>❌ Neēdu</button>
+  </div>
+
+  <div id="output"></div>
+
+  <button class="btn" onclick="eksportetCSV()">📥 Eksportēt uz CSV</button>
+
+  <script>
+    const skoleni = {
+      "001": { vards:"Ardavs-Celmiņš Marks",        klase:"9A", pin:"12345", answered:false, eats:null, time:"" },
+      "002": { vards:"Baltiņa Kate",                klase:"9A", pin:"23456", answered:false, eats:null, time:"" },
+      "003": { vards:"Berķis-Bergs Gabriels Deivids",klase:"9A", pin:"34567", answered:false, eats:null, time:"" },
+      "004": { vards:"Bērziņš Toms Kristofers",      klase:"9A", pin:"45678", answered:false, eats:null, time:"" },
+      "005": { vards:"Breidaks Krišjānis",           klase:"9A", pin:"56789", answered:false, eats:null, time:"" },
+      "006": { vards:"Davidovs Rems",                klase:"9A", pin:"67890", answered:false, eats:null, time:"" },
+      "007": { vards:"Enkure Laura",                 klase:"9A", pin:"78901", answered:false, eats:null, time:"" },
+      "008": { vards:"Kalniņa Emīlija",              klase:"9A", pin:"89012", answered:false, eats:null, time:"" },
+      "009": { vards:"Kapilova Brenda",              klase:"9A", pin:"90123", answered:false, eats:null, time:"" },
+      "010": { vards:"Kicis Markus",                 klase:"9A", pin:"01234", answered:false, eats:null, time:"" },
+      "011": { vards:"Krams Henrijs",                klase:"9A", pin:"11223", answered:false, eats:null, time:"" }
+    };
+
+    let currentId = null;
+
+    function saveData() {
+      localStorage.setItem("pusdienasDati", JSON.stringify(skoleni));
+    }
+
+    function loadData() {
+      const stored = localStorage.getItem("pusdienasDati");
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      for (const id in parsed) {
+        if (skoleni[id]) {
+          skoleni[id].answered = parsed[id].answered;
+          skoleni[id].eats     = parsed[id].eats;
+          skoleni[id].time     = parsed[id].time;
+        }
+      }
+    }
+
+    function enableChoice() {
+      const pin = document.getElementById("pinInput").value.trim();
+      currentId = Object.keys(skoleni).find(id => skoleni[id].pin === pin) || null;
+      document.getElementById("yesBtn").disabled = !currentId;
+      document.getElementById("noBtn").disabled  = !currentId;
+    }
+
+    function choose(eats) {
+      if (!currentId) return;
+      const s = skoleni[currentId];
+      const out = document.getElementById("output");
+
+      if (s.answered) {
+        out.innerHTML = `⚠️ ${s.vards} jau reģistrēts šodien.`;
+      } else {
+        s.answered = true;
+        s.eats     = eats;
+        s.time     = new Date().toLocaleTimeString();
+        saveData();
+
+        const symbol = eats ? "✅" : "❌";
+        out.innerHTML = `${symbol} ${s.vards} (${s.klase}) reģistrēts kā ${eats ? "ēd" : "neēd"} (${s.time})`;
+      }
+
+      document.getElementById("pinInput").value = "";
+      enableChoice();
+      document.getElementById("pinInput").focus();
+    }
+
+    function eksportetCSV() {
+      let csv = "ID,Vārds,Klase,Ēd,Laiks\n";
+      for (const id in skoleni) {
+        const s = skoleni[id];
+        csv += `${id},"${s.vards}",${s.klase},${s.eats ? "Jā" : "Nē"},${s.time}\n`;
+      }
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = "pusdienas_skoleni.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    window.onload = () => {
+      loadData();
+    };
+  </script>
+</body>
+</html>
